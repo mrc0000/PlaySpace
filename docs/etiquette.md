@@ -34,6 +34,25 @@ Everything in `src/uap_archive/nara_client.py`:
   slow down or stop, please open an issue or email the contact in the
   User-Agent. We'll respect it.
 
+## API rate cap (NARA)
+
+NARA's Catalog API has a **default cap of 10,000 queries per month per
+API key** (per their public docs). A naive recursive walk of a single
+RG-615 series can spend hundreds of queries; doing all five agencies
+back-to-back can exceed the monthly quota and lock you out.
+
+For that reason this project recommends the *bulk-download* path:
+
+- NARA publishes per-collection ZIPs + JSON metadata at
+  <https://www.archives.gov/research/catalog/catalog-bulk-downloads/uap-bulk-download>,
+  refreshed at least 3× a year.
+- `python -m uap_archive bulk --json <metadata.json> --agency FAA`
+  ingests that JSON without making a single live API call.
+- The live catalog walk in `discover.py` is still available for cases
+  where you need fresher data than the last bulk refresh — but it
+  defaults to 1 rps and you should obtain an API key for any non-trivial
+  walk so you don't share quota with anonymous users.
+
 ## Snapshot vs canonical
 
 Manifests record `captured_at` per object. NARA may withdraw, redact, or

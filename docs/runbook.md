@@ -10,6 +10,38 @@
   sha256 (after you run `verify`), so you can hand a file to a friend on
   USB and they can confirm it wasn't tampered with.
 
+## NARA path: prefer bulk downloads over the catalog API
+
+NARA publishes per-collection ZIPs + JSON metadata at:
+
+> <https://www.archives.gov/research/catalog/catalog-bulk-downloads/uap-bulk-download>
+
+This is the recommended path for the FAA / NRC / ODNI / NSA / DoS data
+because:
+
+- The Catalog API enforces **10,000 queries per month per key**, and a
+  full series walk burns through that fast.
+- NARA refreshes the bulk downloads at least three times a year, so
+  staying aligned with the published ZIPs keeps the manifest in sync with
+  whatever NARA has officially blessed for this quarter.
+- The ZIPs come with a JSON manifest describing every record's NAID,
+  title, and digital-object URLs. We can ingest that JSON straight into
+  our schema with no live API traffic at all.
+
+```bash
+# Download the ZIPs and accompanying JSON files manually from the page
+# above (one set per agency). Then:
+python -m uap_archive bulk --json downloads/faa.json --agency FAA
+python -m uap_archive bulk --json downloads/nrc.json --agency NRC
+
+# If unsure of the JSON shape NARA used this quarter, probe first:
+python -m uap_archive bulk --json downloads/odni.json --agency ODNI --inspect
+```
+
+The `bulk` ingester accepts top-level lists, NDJSON, and `{"records":[...]}`
+envelopes; it tolerates camelCase or snake_case field names. If a future
+shape breaks it, run `--inspect` and open an issue with the output.
+
 ## Day-zero (5 minutes)
 
 ```bash

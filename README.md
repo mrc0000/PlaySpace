@@ -53,7 +53,20 @@ python -m uap_archive seed \
     --csv manifests/seeds/wargov-release-1/uap-csv.csv \
     --out manifests/by-agency/wargov.jsonl
 
-# 3) live discovery against NARA (Phase 2)
+# 3a) RECOMMENDED for NARA: download the per-collection ZIPs from
+#     https://www.archives.gov/research/catalog/catalog-bulk-downloads/uap-bulk-download
+#     and ingest the JSON metadata that comes alongside them. This avoids
+#     the catalog API entirely (it has a 10,000-queries/month/key cap).
+python -m uap_archive bulk --json /path/to/faa-metadata.json --agency FAA
+python -m uap_archive bulk --json /path/to/nrc-metadata.json --agency NRC
+python -m uap_archive bulk --json /path/to/odni-metadata.json --agency ODNI
+python -m uap_archive bulk --json /path/to/nsa-metadata.json --agency NSA
+python -m uap_archive bulk --json /path/to/dos-metadata.json --agency DOS
+
+# Unsure about the JSON shape? Probe before writing:
+python -m uap_archive bulk --json /path/to/file.json --agency FAA --inspect
+
+# 3b) ALTERNATIVE — live catalog API (rate-limit-aware)
 python -m uap_archive discover --source FAA --max-records 25
 python -m uap_archive siptest --agency FAA --sample 5
 

@@ -1,0 +1,18 @@
+{
+  "records": [
+    {
+      "_source": {
+        "naId": 488808322,
+        "title": "NRC UAP File Series",
+        "levelOfDescription": "series",
+        "digitalObjects": [
+          {
+            "object_url": "https://catalog.archives.gov/OpaAPI/media/488808322/content/index.pdf",
+            "filename": "nrc-uap-series-index.pdf",
+            "media_type": "application/pdf"
+          }
+        ]
+      }
+    }
+  ]
+}

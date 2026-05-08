@@ -24,6 +24,20 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--version", action="version", version=__version__)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    p_bulk = sub.add_parser("bulk",
+                            help="ingest NARA bulk-download JSON metadata into a manifest")
+    p_bulk.add_argument("--json", dest="json_path", type=Path, required=True,
+                        help="path to NARA-published JSON metadata file (from the bulk download)")
+    p_bulk.add_argument("--agency", required=True,
+                        help="agency code: FAA / NRC / ODNI / NSA / DOS / OSD")
+    p_bulk.add_argument("--root-naid", type=int, default=None,
+                        help="parent series NAID; auto-fills from config.ROOT_NAIDS if known")
+    p_bulk.add_argument("--out", type=Path, default=None,
+                        help="manifest path (default: manifests/by-agency/<agency>.jsonl)")
+    p_bulk.add_argument("--inspect", action="store_true",
+                        help="probe the JSON shape without writing a manifest")
+    _add_common(p_bulk)
+
     p_seed = sub.add_parser("seed",
                             help="build wargov manifest from a curated TSV/CSV (offline)")
     p_seed.add_argument("--tsv", type=Path, default=None,
@@ -70,6 +84,19 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose >= 2 else (logging.INFO if args.verbose else logging.WARNING),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+
+    if args.cmd == "bulk":
+        from uap_archive import bulk_ingest
+        from uap_archive.config import BY_AGENCY_DIR, ROOT_NAIDS
+        if args.inspect:
+            print(bulk_ingest.inspect(args.json_path))
+            return 0
+        agency = args.agency.upper()
+        out = args.out or BY_AGENCY_DIR / f"{agency.lower()}.jsonl"
+        root = args.root_naid or ROOT_NAIDS.get(agency)
+        n = bulk_ingest.ingest(args.json_path, agency=agency, out=out, root_naid=root)
+        print(f"manifest: {out} ({n} objects)")
+        return 0
 
     if args.cmd == "seed":
         from uap_archive.seeds import seed_manifest
