@@ -1,0 +1,106 @@
+"""`python -m uap_archive <subcommand>` entry point."""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import logging
+import sys
+from pathlib import Path
+
+from uap_archive import __version__
+from uap_archive.config import DEFAULT_RPS
+
+
+def _add_common(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--rps", type=float, default=DEFAULT_RPS,
+                   help="global requests/sec ceiling (default: %(default)s)")
+    p.add_argument("-v", "--verbose", action="count", default=0)
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(prog="uap-archive",
+                                 description="UAP Disclosure Archive — manifest tooling")
+    ap.add_argument("--version", action="version", version=__version__)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p_disc = sub.add_parser("discover", help="enumerate digital objects (manifest only)")
+    p_disc.add_argument("--source", default="wargov",
+                        help="'wargov' or an agency code (FAA/NRC/ODNI/NSA/DOS)")
+    p_disc.add_argument("--root", type=int, default=None,
+                        help="override NAID (advanced)")
+    p_disc.add_argument("--max-records", type=int, default=None,
+                        help="hard cap for smoke tests")
+    p_disc.add_argument("--out", type=Path, default=None,
+                        help="manifest path (default: manifests/by-agency/<source>.jsonl)")
+    p_disc.add_argument("--snapshot-html", type=Path, default=None,
+                        help="dump landing page HTML to this file (war.gov only)")
+    _add_common(p_disc)
+
+    p_sip = sub.add_parser("siptest", help="project per-agency size from existing manifest")
+    p_sip.add_argument("--agency", required=False, default=None)
+    p_sip.add_argument("--sample", type=int, default=20)
+    _add_common(p_sip)
+
+    p_fet = sub.add_parser("fetch", help="resumable downloader for end-users")
+    p_fet.add_argument("--agency", required=True)
+    p_fet.add_argument("--max-bytes", type=int, default=None)
+    _add_common(p_fet)
+
+    p_ver = sub.add_parser("verify", help="re-hash staging/ and update manifest sha256")
+    p_ver.add_argument("--agency", required=True)
+    _add_common(p_ver)
+
+    return ap
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _build_parser().parse_args(argv)
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose >= 2 else (logging.INFO if args.verbose else logging.WARNING),
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    if args.cmd == "discover":
+        from uap_archive.discover import discover_source
+        path = asyncio.run(discover_source(
+            args.source,
+            rps=args.rps,
+            out_path=args.out,
+            max_records=args.max_records,
+            root_override=args.root,
+            snapshot_html_to=str(args.snapshot_html) if args.snapshot_html else None,
+        ))
+        print(f"manifest: {path}")
+        return 0
+
+    if args.cmd == "siptest":
+        from uap_archive.config import MANIFESTS_DIR
+        from uap_archive.siptest import run_all, siptest_agency, write_projection_md
+        if args.agency:
+            row = siptest_agency(args.agency, sample=args.sample)
+            write_projection_md([row], MANIFESTS_DIR / "size-projection.md")
+            print(row)
+        else:
+            print(f"projection: {run_all()}")
+        return 0
+
+    if args.cmd == "fetch":
+        from uap_archive.fetch import fetch_agency
+        result = asyncio.run(fetch_agency(
+            args.agency, rps=args.rps, max_bytes=args.max_bytes,
+        ))
+        print(result)
+        return 0 if result.get("fail", 0) == 0 else 2
+
+    if args.cmd == "verify":
+        from uap_archive.verify import verify_agency
+        report = verify_agency(args.agency)
+        print({k: (len(v) if isinstance(v, list) else v) for k, v in report.items()})
+        return 0 if not report["mismatch"] else 1
+
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

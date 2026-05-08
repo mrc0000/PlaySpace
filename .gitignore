@@ -1,0 +1,41 @@
+# Local download staging — never commit blobs
+staging/
+*.part
+*.tmp
+
+# Built indexes
+site/
+index/site/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Bulk binary types — block accidental commits
+*.pdf
+*.mp4
+*.mov
+*.tiff
+*.tif
+*.zip
+*.tar.gz
+
+# Allow specific small docs PDFs if added under docs/
+!docs/*.pdf
+
+# Verify reports (large, machine-generated)
+manifests/verify-report-*.json
+
+# Env
+.env

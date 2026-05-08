@@ -1,0 +1,2 @@
+# Per-agency JSONL files land in manifests/by-agency/ after `python -m uap_archive discover`.
+# This file exists so the directory is tracked before the first run.
