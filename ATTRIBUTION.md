@@ -18,6 +18,22 @@ Per object, the manifest records `object_url` (the original government URL),
 back to the canonical source. Treat the source URL as authoritative; treat
 the manifest as a snapshot.
 
+## Upstream community mirrors we credit
+
+To avoid hammering war.gov during initial enumeration, this repo seeds its
+war.gov manifest from a community-maintained inventory:
+
+- [`DenisSergeevitch/UFO-USA`](https://github.com/DenisSergeevitch/UFO-USA)
+  — converted-to-markdown archive of the PURSUE Release 01 PDFs. We import
+  three of its metadata files verbatim under
+  `manifests/seeds/wargov-release-1/` (`pdf_manifest.tsv`, `uap-csv.csv`,
+  `download_summary.json`). These are URL-and-title facts about a
+  public-domain government release, not original expression. See
+  `manifests/seeds/wargov-release-1/README.md` for the full provenance note.
+
+If you maintain a similar mirror and would like it credited and used as a
+seed, please open an issue.
+
 ## Copyright
 
 Records in RG-615 and on war.gov are works of the United States federal

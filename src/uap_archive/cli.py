@@ -24,6 +24,16 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--version", action="version", version=__version__)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    p_seed = sub.add_parser("seed",
+                            help="build wargov manifest from a curated TSV/CSV (offline)")
+    p_seed.add_argument("--tsv", type=Path, default=None,
+                        help="pdf_manifest.tsv path (DenisSergeevitch/UFO-USA layout)")
+    p_seed.add_argument("--csv", type=Path, default=None,
+                        help="uap-csv.csv path (full 162-row release inventory)")
+    p_seed.add_argument("--out", type=Path,
+                        default=Path("manifests/by-agency/wargov.jsonl"))
+    _add_common(p_seed)
+
     p_disc = sub.add_parser("discover", help="enumerate digital objects (manifest only)")
     p_disc.add_argument("--source", default="wargov",
                         help="'wargov' or an agency code (FAA/NRC/ODNI/NSA/DOS)")
@@ -60,6 +70,12 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose >= 2 else (logging.INFO if args.verbose else logging.WARNING),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+
+    if args.cmd == "seed":
+        from uap_archive.seeds import seed_manifest
+        n = seed_manifest(tsv=args.tsv, csv_path=args.csv, out=args.out)
+        print(f"manifest: {args.out} ({n} objects)")
+        return 0
 
     if args.cmd == "discover":
         from uap_archive.discover import discover_source

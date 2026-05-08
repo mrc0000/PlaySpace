@@ -42,17 +42,25 @@ cd PlaySpace
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 
-# 1) read what's there without downloading anything
-python -m uap_archive discover --source wargov \
+# 1) read what's there without downloading anything — Phase 1 manifest is
+#    already committed at manifests/by-agency/wargov.jsonl (263 entries
+#    seeded from a community mirror so we never had to re-hit war.gov)
+jq -r '.title' manifests/by-agency/wargov.jsonl | head
+
+# 2) regenerate the seeded manifest if you update the seed files
+python -m uap_archive seed \
+    --tsv manifests/seeds/wargov-release-1/pdf_manifest.tsv \
+    --csv manifests/seeds/wargov-release-1/uap-csv.csv \
     --out manifests/by-agency/wargov.jsonl
 
-# 2) project per-agency total sizes
+# 3) live discovery against NARA (Phase 2)
+python -m uap_archive discover --source FAA --max-records 25
 python -m uap_archive siptest --agency FAA --sample 5
 
-# 3) pull a slice — capped at 500 MB at 1 req/s, resumable
+# 4) pull a slice — capped at 500 MB at 1 req/s, resumable
 python -m uap_archive fetch --agency FAA --max-bytes 500000000 --rps 1
 
-# 4) verify checksums
+# 5) verify checksums
 python -m uap_archive verify --agency FAA
 ```
 
@@ -83,8 +91,13 @@ build it from the manifest and please link back here.
 
 ## Status
 
-- **Phase 1**: war.gov scrape → wargov manifest. ✅ scaffolding, scraper module.
-- **Phase 2**: NARA catalog walk for all five agency NAIDs. ✅ client + discover module.
+- **Phase 1**: war.gov manifest. ✅ committed at `manifests/by-agency/wargov.jsonl`
+  — 263 records (117 PDFs + 137 thumbnails + 8 modal images + 1 other),
+  seeded from [`DenisSergeevitch/UFO-USA`](https://github.com/DenisSergeevitch/UFO-USA)
+  to avoid re-loading war.gov. Live HTML scraper available too via
+  `python -m uap_archive discover --source wargov`.
+- **Phase 2**: NARA catalog walk for all five agency NAIDs. ✅ client + discover module ready;
+  run live on your machine — this repo's CI does not hit gov servers.
 - **Phase 3**: optional offline HTML browser of the manifest. Pending.
 
 Run live discovery on your own machine — this repo's CI does not hit gov
