@@ -51,7 +51,11 @@ jq -r '.title' manifests/by-agency/wargov.jsonl | head
 python -m uap_archive seed \
     --tsv manifests/seeds/wargov-release-1/pdf_manifest.tsv \
     --csv manifests/seeds/wargov-release-1/uap-csv.csv \
+    --curl-log manifests/seeds/wargov-release-1/curl_download.log \
     --out manifests/by-agency/wargov.jsonl
+# 113 of 117 PDFs get size_bytes populated from the curl log;
+# total ~2.15 GiB. The other 4 are filename-encoding edge cases
+# (em-dash, embedded spaces, typographic apostrophe in URL).
 
 # 3a) RECOMMENDED for NARA: download the per-collection ZIPs from
 #     https://www.archives.gov/research/catalog/catalog-bulk-downloads/uap-bulk-download

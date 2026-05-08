@@ -1,10 +1,10 @@
-"""Seed parser: TSV ingestion, agency normalization, dedup."""
+"""Seed parser: TSV ingestion, agency normalization, dedup, size enrichment."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from uap_archive.seeds import parse_pdf_manifest_tsv, seed_manifest
+from uap_archive.seeds import parse_curl_log, parse_pdf_manifest_tsv, seed_manifest
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -50,3 +50,27 @@ def test_seed_manifest_idempotent(tmp_path: Path):
     # Stable sort means re-running yields byte-identical output (etags would
     # differ if we re-fetched; from a static seed they don't).
     assert first_bytes == second_bytes
+
+
+def test_parse_curl_log_extracts_only_ok_lines():
+    sizes = parse_curl_log(FIXTURES / "wargov_curl_log.txt")
+    # `skip` and `fail` lines should be ignored; only `ok` lines kept.
+    assert sizes == {
+        "65_HS1-834228961_62-HQ-83894_Section_2.pdf": 118380300,
+        "DOW-UAP-D32_ Mission Report_ Syria_ October 2024.pdf": 1048576,
+    }
+
+
+def test_size_enrichment_case_insensitive(tmp_path: Path):
+    out = tmp_path / "wargov.jsonl"
+    seed_manifest(
+        tsv=FIXTURES / "wargov_seed_sample.tsv",
+        csv_path=None,
+        curl_log=FIXTURES / "wargov_curl_log.txt",
+        out=out,
+    )
+    # The TSV sample's URL slug is `dow-uap-d32-mission-report,-syria-october-2024.pdf`
+    # but the curl log lists it as `DOW-UAP-D32_ Mission Report_ Syria_ October 2024.pdf`.
+    # The TSV row-1 column has the original-case filename, so enrichment matches.
+    payload = out.read_text()
+    assert '"size_bytes":1048576' in payload

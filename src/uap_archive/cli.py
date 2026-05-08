@@ -44,6 +44,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="pdf_manifest.tsv path (DenisSergeevitch/UFO-USA layout)")
     p_seed.add_argument("--csv", type=Path, default=None,
                         help="uap-csv.csv path (full 162-row release inventory)")
+    p_seed.add_argument("--curl-log", type=Path, default=None,
+                        help="curl_download.log to back-fill size_bytes by filename")
     p_seed.add_argument("--out", type=Path,
                         default=Path("manifests/by-agency/wargov.jsonl"))
     _add_common(p_seed)
@@ -100,7 +102,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "seed":
         from uap_archive.seeds import seed_manifest
-        n = seed_manifest(tsv=args.tsv, csv_path=args.csv, out=args.out)
+        n = seed_manifest(
+            tsv=args.tsv,
+            csv_path=args.csv,
+            curl_log=args.curl_log,
+            out=args.out,
+        )
         print(f"manifest: {args.out} ({n} objects)")
         return 0
 
