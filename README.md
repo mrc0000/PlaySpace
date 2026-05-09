@@ -106,16 +106,35 @@ each reader. Tradeoffs:
 If you want a torrent or rehosted bundle, that's downstream of this repo —
 build it from the manifest and please link back here.
 
+## Offline browser
+
+A single self-contained `site/index.html` (~95 KB, 263 records embedded as
+JSON) is committed. Opens directly via `file://` or:
+
+```bash
+python -m http.server 8000 -d site
+# then visit http://localhost:8000
+```
+
+Vanilla JS — sortable table, text filter, agency + media-type pickers,
+no external scripts or stylesheets. USB-stick portable.
+
+Regenerate after a manifest update:
+
+```bash
+python -m uap_archive index --out site/index.html
+```
+
 ## Status
 
 - **Phase 1**: war.gov manifest. ✅ committed at `manifests/by-agency/wargov.jsonl`
-  — 263 records (117 PDFs + 137 thumbnails + 8 modal images + 1 other),
-  seeded from [`DenisSergeevitch/UFO-USA`](https://github.com/DenisSergeevitch/UFO-USA)
+  — 263 records, 113 of 117 PDFs sized (~2.15 GiB). Seeded from
+  [`DenisSergeevitch/UFO-USA`](https://github.com/DenisSergeevitch/UFO-USA)
   to avoid re-loading war.gov. Live HTML scraper available too via
   `python -m uap_archive discover --source wargov`.
-- **Phase 2**: NARA catalog walk for all five agency NAIDs. ✅ client + discover module ready;
-  run live on your machine — this repo's CI does not hit gov servers.
-- **Phase 3**: optional offline HTML browser of the manifest. Pending.
+- **Phase 2**: NARA catalog walk + bulk-download ingester. ✅ run live on
+  your machine — this repo's CI does not hit gov servers.
+- **Phase 3**: offline HTML browser. ✅ `site/index.html` (95 KB).
 
 Run live discovery on your own machine — this repo's CI does not hit gov
 servers.

@@ -24,6 +24,12 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--version", action="version", version=__version__)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    p_idx = sub.add_parser("index",
+                           help="render a self-contained offline HTML browser of the manifest")
+    p_idx.add_argument("--out", type=Path, default=Path("site/index.html"),
+                       help="output HTML file (default: site/index.html)")
+    _add_common(p_idx)
+
     p_bulk = sub.add_parser("bulk",
                             help="ingest NARA bulk-download JSON metadata into a manifest")
     p_bulk.add_argument("--json", dest="json_path", type=Path, required=True,
@@ -142,6 +148,16 @@ def main(argv: list[str] | None = None) -> int:
         ))
         print(result)
         return 0 if result.get("fail", 0) == 0 else 2
+
+    if args.cmd == "index":
+        from uap_archive.config import MANIFESTS_DIR
+        from uap_archive.index_html import build_site
+        info = build_site(MANIFESTS_DIR, args.out)
+        print(f"site: {info['out']} ({info['record_count']} records, "
+              f"{info['size_bytes']/1024:.1f} KB)")
+        for a in info["agencies"]:
+            print(f"  {a['code']}: {a['count']} records · {a['size']}")
+        return 0
 
     if args.cmd == "verify":
         from uap_archive.verify import verify_agency

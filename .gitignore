@@ -3,9 +3,9 @@ staging/
 *.part
 *.tmp
 
-# Built indexes
-site/
-index/site/
+# Built indexes — staging dirs only; site/index.html itself is committed
+site/staging/
+index/site/staging/
 
 # Python
 .venv/
